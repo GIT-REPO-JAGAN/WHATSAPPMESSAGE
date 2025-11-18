@@ -1,0 +1,44 @@
+{
+  "name": "WhatsApp LLM Bot",
+  "image": "mcr.microsoft.com/devcontainers/python:0-3",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:1": {}
+  },
+
+  "postCreateCommand": "apt-get update && apt-get install -y \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxkbcommon0 \
+    libasound2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libnss3 \
+    libxss1 \
+    libxcursor1 \
+    libxi6 \
+    libxtst6 \
+    fonts-liberation && \
+    pip install -r requirements.txt && \
+    python -m playwright install chromium",
+
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash"
+  },
+
+  "forwardPorts": [],
+
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1"
+  },
+
+  "remoteUser": "vscode",
+
+  "workspaceFolder": "/workspace"
+}

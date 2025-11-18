@@ -8,27 +8,21 @@ USER_DATA_DIR = "wa_user_data"
 
 
 # ------------------------------------------------------
-#  LOGIN CHECK + QR CAPTURE
+# CHECK LOGIN + QR CAPTURE
 # ------------------------------------------------------
 def ensure_logged_and_capture_qr(page):
-    """
-    Checks if WhatsApp is logged in.
-    If not logged in, screenshot the QR page.
-    """
 
     try:
-        # If search box exists, user is logged in
+        # Search bar exists → logged in
         if page.locator("//div[@role='textbox']").count() > 0:
             return True
-
     except:
         pass
 
     # Not logged in → capture QR
     try:
         page.screenshot(path=QR_PATH, full_page=True)
-        print(f"[+] QR captured successfully → {QR_PATH}")
-
+        print(f"[+] QR captured → {QR_PATH}")
     except Exception as e:
         print("[!] Failed to capture QR:", e)
 
@@ -36,14 +30,11 @@ def ensure_logged_and_capture_qr(page):
 
 
 # ------------------------------------------------------
-#  OPEN GROUP
+# OPEN WHATSAPP GROUP
 # ------------------------------------------------------
 def find_and_open_group(page, group_name):
-    """
-    Finds and opens the specified WhatsApp group.
-    """
 
-    # Wait for chat UI
+    # Wait for chat list
     page.wait_for_selector('div[role="grid"], div[aria-label="Chat list"]', timeout=60000)
 
     # Try direct match
@@ -53,7 +44,7 @@ def find_and_open_group(page, group_name):
         print(f"[+] Group '{group_name}' opened.")
         return True
 
-    # Fallback: Search bar
+    # Search method
     try:
         search = page.locator("//div[@contenteditable='true']").first
         search.click()
@@ -65,7 +56,6 @@ def find_and_open_group(page, group_name):
             result.first.click()
             print(f"[+] Group '{group_name}' opened via search.")
             return True
-
     except Exception as e:
         print("[ERROR] Search failed:", e)
 
@@ -74,20 +64,16 @@ def find_and_open_group(page, group_name):
 
 
 # ------------------------------------------------------
-#  MESSAGE LISTENER
+# LISTEN & REPLY TO MESSAGES
 # ------------------------------------------------------
 def listen_for_messages(page, group_name):
-    """
-    Watches the group for new incoming messages
-    and replies only if translation is needed.
-    """
 
-    print(f"[+] Watching group '{group_name}'...")
-
+    print(f"[+] Listening for messages in '{group_name}'...")
     last_message = ""
 
     while True:
         try:
+            # Get incoming messages
             messages = page.locator("//div[contains(@class,'message-in')]").all()
 
             if not messages:
@@ -96,42 +82,46 @@ def listen_for_messages(page, group_name):
 
             latest = messages[-1].inner_text().strip()
 
-            # Only act on new messages
+            # Only act on NEW messages
             if latest != last_message:
                 print(f"[NEW MESSAGE] → {latest}")
 
-                # Use LLM to translate if not English
-                reply = ask_llm(latest)
+                translation = ask_llm(latest)
 
-                if reply and reply != latest:
-                    print(f"[BOT REPLY] → {reply}")
+                if translation:
+                    print(f"[BOT REPLY] → {translation}")
 
                     message_box = page.locator("//div[@contenteditable='true']").last
                     message_box.click()
-                    message_box.fill(reply)
+                    message_box.fill(translation)
                     page.keyboard.press("Enter")
 
                 last_message = latest
 
         except Exception as e:
-            print("[ERROR] Message listener crashed:", e)
+            print("[ERROR] Listener crashed:", e)
 
         time.sleep(1)
 
 
 # ------------------------------------------------------
-#  MAIN BOT RUNNER
+# MAIN BOT FUNCTION
 # ------------------------------------------------------
 def run_bot():
+
     print("[*] Starting WhatsApp bot...")
 
     with sync_playwright() as p:
 
-        # IMPORTANT — run non-headless to avoid Chrome 85+ error
+        # FIXED → headless=True to avoid XServer error
         browser = p.chromium.launch_persistent_context(
             USER_DATA_DIR,
-            headless=False,  # FIX: required for WhatsApp Web
-            args=["--no-sandbox", "--disable-gpu"],
+            headless=True,               # REQUIRED on VPS
+            args=[
+                "--no-sandbox",
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
+            ],
         )
 
         page = browser.new_page()
@@ -145,12 +135,10 @@ def run_bot():
         waited = 0
 
         if not logged_in:
-            print("[!] Login required — QR saved as wa_qr.png")
-            print("    → Open wa_qr.png")
-            print("    → Scan using WhatsApp → Linked Devices")
-            print("    → Waiting for login...")
+            print("[!] Scan QR from wa_qr.png (Stored in Project Folder)")
+            print("[!] Waiting for login...")
 
-        # Wait for login
+        # Waiting Loop
         while waited < MAX_WAIT:
             html = page.content()
 
@@ -163,15 +151,15 @@ def run_bot():
             waited += 2
 
         if not logged_in:
-            print("[X] Login failed. Try scanning again.")
+            print("[X] Login failed. Try again.")
             browser.close()
             return
 
         # Open group
         if not find_and_open_group(page, GROUP_NAME):
-            print("[X] Cannot continue without group.")
+            print("[X] Cannot open group. Exiting.")
             browser.close()
             return
 
-        # Start monitoring
+        # Start message loop
         listen_for_messages(page, GROUP_NAME)

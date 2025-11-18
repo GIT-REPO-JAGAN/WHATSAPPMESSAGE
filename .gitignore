@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+.vscode/
+wa_user_data/
+opt/chrome/

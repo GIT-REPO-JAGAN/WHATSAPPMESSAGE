@@ -1,0 +1,13 @@
+{
+  "name": "WhatsApp LLM Bot",
+  "image": "mcr.microsoft.com/devcontainers/python:0-3",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:1": {}
+  },
+  "postCreateCommand": "pip install -r requirements.txt && python -m playwright install chromium",
+  "forwardPorts": [],
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1"
+  },
+  "workspaceFolder": "/workspace"
+}

@@ -1,0 +1,5 @@
+__pycache__/
+wa_user_data/
+.env
+*.pyc
+.vscode/

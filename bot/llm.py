@@ -1,10 +1,13 @@
 # llm.py
 import os
+from dotenv import load_dotenv
+load_dotenv()  # <-- this loads .env file
+
 import openai
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise SystemExit("Set OPENAI_API_KEY environment variable.")
+    raise SystemExit("Set OPENAI_API_KEY in .env")
 
 openai.api_key = OPENAI_API_KEY
 
